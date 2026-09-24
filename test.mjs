@@ -133,11 +133,19 @@ assert.equal((await post("/api/play/state", { token })).status, 401);
 // 歌單格式要驗
 assert.equal((await admin("songs", { songs: [{ year: "2003", artist: "周杰倫", title: "晴天" }] })).status, 400);
 const songs = [
-    { year: 2003, artist: ["周杰倫", "Jay Chou"], title: "晴天" },
+    { year: 2003, artist: ["周杰倫", "Jay Chou"], title: "晴天", youtube: "https://youtu.be/example" },
     { year: 2010, artist: "五月天", title: "倔強" },
     { year: 2007, artist: "蔡依林", title: "日不落" },
 ];
+// youtube 可省略；有填就要是 http(s) 網址
+const badLink = [{ ...songs[1], youtube: "javascript:alert(1)" }];
+assert.equal((await admin("songs", { songs: badLink })).status, 400);
 assert.equal((await admin("songs", { songs })).status, 200);
+{
+    const saved = (await (await admin("state")).json()).songs;
+    assert.equal(saved[0].youtube, "https://youtu.be/example");
+    assert.equal("youtube" in saved[1], false);
+}
 
 // 還沒發題不能作答
 assert.equal((await answer(ming, { year: 2003 })).status, 400);

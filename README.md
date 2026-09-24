@@ -72,6 +72,7 @@ npx wrangler deploy
 
 歌單含解答，**不能進 git**：照 `songs.example.json` 的格式寫成 `songs.json`（`songs*.json` 已 gitignore），
 在後台「歌單與解答」選檔上傳。解答只存在伺服器的 Durable Object，玩家端 API 拿不到。
+每首可以加 `youtube` 網址（選填，只收 http/https），後台發題時會出現播放連結；沒填就連到 YouTube 用「歌名 歌手」搜尋。
 
 計分：收卷時自動批改。年份精準 +3、差 3 年以內 +1；歌手、歌名答對各 +1。每組每項取組內最高分，
 所以一組一首歌最多 +5。收卷後在後台改判或修正歌單，總分會自動加減差額。

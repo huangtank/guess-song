@@ -149,9 +149,18 @@ const groupBest = (graded) =>
 
 const toList = (v) => (Array.isArray(v) ? v : [v]).filter((s) => typeof s === "string" && s.trim() !== "");
 
+// youtube 可省略，有填只收 http(s) 網址（後台會拿來當超連結）
+const isLink = (v) => v === undefined || (typeof v === "string" && /^https?:\/\//i.test(v.trim()));
+
 function parseSongs(v) {
     if (!Array.isArray(v)) return null;
-    const songs = v.map((s) => ({ year: s?.year, artist: toList(s?.artist), title: toList(s?.title) }));
+    if (!v.every((s) => isLink(s?.youtube))) return null;
+    const songs = v.map((s) => ({
+        year: s?.year,
+        artist: toList(s?.artist),
+        title: toList(s?.title),
+        ...(s?.youtube === undefined ? {} : { youtube: s.youtube.trim() }),
+    }));
     return songs.every((s) => Number.isInteger(s.year) && s.artist.length && s.title.length) ? songs : null;
 }
 

@@ -63,11 +63,23 @@ function judgeButton(songId, a, field) {
 function render(state) {
     const { songs, round, groupPw, songId, answers, awarded } = state;
 
+    // 選項帶歌名方便辨認；歌單有改（數量或歌名）才重建，避免打斷正在選的選單
     const select = $("quiz_song");
-    if (select.options.length !== songs.length) {
+    const labels = songs.map((s, i) => `第 ${i + 1} 首｜${s.title[0]}`);
+    if ([...select.options].map((o) => o.text).join("\n") !== labels.join("\n")) {
         const keep = selectedSong() ?? round?.songId ?? 0;
-        select.replaceChildren(...songs.map((_, i) => new Option(`第 ${i + 1} 首`, String(i))));
+        select.replaceChildren(...labels.map((label, i) => new Option(label, String(i))));
         if (songs.length) select.value = String(Math.min(keep, songs.length - 1));
+    }
+
+    // 有填 youtube 就直接連過去，沒填就用「歌名 歌手」搜尋
+    const picked = songs[selectedSong()];
+    const link = $("youtube_link");
+    link.hidden = !picked;
+    if (picked) {
+        const query = encodeURIComponent(`${picked.title[0]} ${picked.artist[0]}`);
+        link.href = picked.youtube ?? `https://www.youtube.com/results?search_query=${query}`;
+        link.textContent = picked.youtube ? "▶ 在 YouTube 播放" : "🔍 在 YouTube 搜尋這首";
     }
 
     $("quiz_status").textContent = round

@@ -248,6 +248,25 @@ html, body {
   padding: 0 10px;
 }
 
+.youtube-link {
+  display: block;
+  padding: 10px;
+  background-color: #000000;
+  border: 3px solid var(--mc-stone);
+  color: #ff6b6b;
+  font-size: 0.95rem;
+  text-align: center;
+  text-decoration: none;
+}
+
+.youtube-link[hidden] {
+  display: none;
+}
+
+.youtube-link:hover {
+  border-color: var(--mc-gold);
+}
+
 .password-grid {
   display: grid;
   grid-template-columns: auto 1fr;

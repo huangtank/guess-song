@@ -1,4 +1,4 @@
 [
-    { "year": 2000, "artist": ["範例歌手", "Example Artist"], "title": "範例歌名" },
+    { "year": 2000, "artist": ["範例歌手", "Example Artist"], "title": "範例歌名", "youtube": "https://www.youtube.com/watch?v=xxxxxxxxxxx" },
     { "year": 2010, "artist": "另一位歌手", "title": ["另一首歌", "別名"] }
 ]
