@@ -2,7 +2,7 @@
 const FIELD_NAMES = { year: "年份", artist: "歌手", title: "歌名" };
 const $ = (id) => document.getElementById(id);
 
-let loaded = false; // 歌單、密碼只在第一次載入時填進表單，避免輪詢蓋掉正在編輯的內容
+let loaded = false; // 歌單、代碼只在第一次載入時填進表單，避免輪詢蓋掉正在編輯的內容
 
 // quiet：輪詢用，失敗不跳 alert
 async function adminApi(action, payload = {}, quiet = false) {
@@ -112,7 +112,7 @@ async function refreshQuiz(quiet = false) {
     if (state) render(state);
 }
 
-// 組別密碼欄位
+// 組別代碼欄位
 $("group_passwords").replaceChildren(
     ...Array.from({ length: 4 }, (_, i) => {
         const label = document.createElement("label");
@@ -143,7 +143,7 @@ $("save_pw_btn").addEventListener("click", async () => {
     const passwords = Object.fromEntries(
         Array.from({ length: 4 }, (_, i) => [i + 1, $(`pw_${i + 1}`).value.trim()]),
     );
-    if (await adminApi("passwords", { passwords })) alert("密碼已儲存");
+    if (await adminApi("passwords", { passwords })) alert("代碼已儲存");
 });
 
 $("songs_file").addEventListener("change", async (e) => {

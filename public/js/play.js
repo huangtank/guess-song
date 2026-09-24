@@ -41,31 +41,33 @@ const summary = (a) =>
 
 async function join() {
     const name = $("player_name").value.trim();
-    const group = Number($("player_group").value);
     try {
-        const { data } = await api("/api/join", { name, group, password: $("group_password").value });
+        const { data } = await api("/api/join", { name, code: $("group_code").value });
         if (data.status !== 1) return alert(data.msg);
         localStorage.setItem(PLAYER_KEY, data.token);
-        localStorage.setItem(PLAYER_LABEL_KEY, `第 ${group} 組・${name}`);
+        localStorage.setItem(PLAYER_LABEL_KEY, `第 ${data.group} 組・${name}`);
         showPlay();
     } catch {
         alert("網路錯誤，請再試一次");
     }
 }
 
-const who = (p) => `第 ${p.group} 組 ${p.name}`;
+const FIELD_NAMES = { year: "年份", artist: "歌手", title: "歌名" };
 
-function marqueeText({ first, streaks }) {
-    const parts = [];
-    if (first.title) parts.push(`⚡ 最先答對歌名：${who(first.title)}`);
-    if (first.artist) parts.push(`🎤 最先答對歌手：${who(first.artist)}`);
-    if (first.year) parts.push(`🎯 最先猜中精準年份：${who(first.year)}`);
-    for (const s of streaks) parts.push(`🔥 ${who(s)} 連續答對 ${s.count} 首歌名，真棒！`);
-    return parts.length ? parts.join("　　　") : "這首沒有人答對，下一首加油！";
-}
+// 每組一則：該組這首個人得分最高的人
+const marqueeText = (highlights) =>
+    highlights
+        .map((h) =>
+            h.name
+                ? `組${h.group} ${h.name} [${h.fields.map((f) => FIELD_NAMES[f]).join(" + ")}] 正確得 ${h.points} 分`
+                : `組${h.group} 這首沒有人答對`,
+        )
+        .join("　　　");
 
 // 收卷後才有 highlights；文字沒變就不重設，避免動畫一直從頭跑
 function renderMarquee(highlights) {
+    // 舊版存的是 {first, streaks} 物件，不是陣列就當作沒有，避免整個畫面更新失敗
+    if (!Array.isArray(highlights)) highlights = null;
     $("marquee").hidden = !highlights;
     if (!highlights) return;
     const text = marqueeText(highlights);
@@ -140,7 +142,7 @@ async function submitAnswer() {
 }
 
 $("join_btn").addEventListener("click", () => void join());
-$("group_password").addEventListener("keydown", (e) => {
+$("group_code").addEventListener("keydown", (e) => {
     if (e.key === "Enter") void join();
 });
 $("answer_btn").addEventListener("click", () => void submitAnswer());

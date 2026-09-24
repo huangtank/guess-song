@@ -103,7 +103,7 @@ let clock = Date.now();
 Date.now = () => (clock += 1000); // 每次呼叫前進 1 秒，讓「最先答對」的先後可預測
 
 const admin = (action, body = {}) => post(`/api/admin/${action}`, { token, ...body });
-const join = async (name, group, password) => post("/api/join", { name, group, password });
+const join = async (name, code) => post("/api/join", { name, code });
 const joinToken = async (...args) => (await (await join(...args)).json()).token;
 const answer = (t, a) => post("/api/play/answer", { token: t, ...a });
 const playState = async (t) => (await post("/api/play/state", { token: t })).json();
@@ -112,17 +112,19 @@ const judge = (player, field, value, songId = 0) => admin("judge", { songId, pla
 // 後台 API 都要驗 token
 assert.equal((await post("/api/admin/state", {})).status, 401);
 
-// 還沒設密碼的組不能加入
-assert.equal((await join("小明", 1, "")).status, 401);
+// 還沒設代碼時誰都不能加入
+assert.equal((await join("小明", "")).status, 401);
 
-await admin("passwords", { passwords: { 1: "p1", 2: "p2", 3: "", 4: "" } });
-assert.equal((await join("小明", 1, "p2")).status, 401);
-assert.equal((await join("小明", 3, "")).status, 401); // 空密碼 = 不開放
-assert.equal((await join("小明", 5, "p1")).status, 400); // 只有四組
-assert.equal((await join("", 1, "p1")).status, 400);
-const ming = await joinToken("小明", 1, "p1");
-const hua = await joinToken("小華", 1, "p1");
-const mei = await joinToken("小美", 2, "p2");
+// 代碼不能重複（不分大小寫），重複時整批不存
+assert.equal((await admin("passwords", { passwords: { 1: "Red", 2: " red ", 3: "", 4: "" } })).status, 400);
+await admin("passwords", { passwords: { 1: "Red", 2: "blue", 3: "", 4: "" } });
+assert.equal((await join("小明", "green")).status, 401);
+assert.equal((await join("小明", "")).status, 401); // 空代碼 = 該組不開放
+assert.equal((await join("", "Red")).status, 400);
+const ming = await joinToken("小明", "Red");
+const hua = await joinToken("小華", " red "); // 手機自動大寫、多打空白也能進
+const mei = await joinToken("小美", "BLUE");
+assert.equal((await (await join("小王", "blue")).json()).group, 2); // 回傳組別給前端顯示
 
 // 玩家 token 不能當後台 token，反之亦然
 assert.equal((await post("/api/admin/state", { token: ming })).status, 401);
@@ -164,15 +166,15 @@ let after = await scores();
 assert.equal(after[1] - before[1], 5);
 assert.equal(after[2] - before[2], 3);
 
-// 跑馬燈：各項最先答對的人（時間看最後一次送出，年份只算精準）
+// 跑馬燈：每組個人得分最高的人（小明 年份+歌手 2 分、小華 年份+歌名 4 分 → 取小華）
 st = await playState(ming);
 assert.equal(st.round.open, false);
-assert.deepEqual(st.highlights.first, {
-    year: { group: 1, name: "小華" },
-    artist: { group: 1, name: "小明" },
-    title: { group: 1, name: "小華" },
-});
-assert.deepEqual(st.highlights.streaks, []);
+assert.deepEqual(st.highlights, [
+    { group: 1, name: "小華", fields: ["year", "title"], points: 4 },
+    { group: 2, name: "小美", fields: ["year", "artist", "title"], points: 3 },
+    { group: 3, name: null, fields: [], points: 0 }, // 沒人作答
+    { group: 4, name: null, fields: [], points: 0 },
+]);
 
 // 人工改判：年份可以改成 3 / 1 / 0，還原後總分跟著回來
 await judge("2:小美", "year", 3);
@@ -194,7 +196,7 @@ assert.equal((await judge("1:小明", "artist", 3)).status, 400);
 const { answers } = await (await admin("state", { songId: 0 })).json();
 assert.equal(answers.length, 3);
 
-// 第 2 首：小美連續兩首答對歌名
+// 第 2 首：小華這組沒拿分的人不會被選中
 await admin("open", { songId: 1 });
 await answer(ming, { year: 2013, artist: "", title: "倔強" }); // 差 3 → +1
 await answer(mei, { year: 2014, artist: "", title: "倔強" }); // 差 4 → 0
@@ -204,17 +206,25 @@ await admin("close");
 after = await scores();
 assert.equal(after[1] - before[1], 2);
 assert.equal(after[2] - before[2], 1);
-assert.deepEqual((await playState(hua)).highlights.streaks, [{ group: 2, name: "小美", count: 2 }]);
-
-// 第 3 首：小美連續三首、小明連續兩首（第 1 首沒答對歌名），多的排前面
-await admin("open", { songId: 2 });
-await answer(ming, { year: 2007, artist: "", title: "日不落" });
-await answer(mei, { year: 2000, artist: "", title: "日不落" });
-await admin("close");
-assert.deepEqual((await playState(mei)).highlights.streaks, [
-    { group: 2, name: "小美", count: 3 },
-    { group: 1, name: "小明", count: 2 },
+assert.deepEqual((await playState(hua)).highlights.slice(0, 2), [
+    { group: 1, name: "小明", fields: ["year", "title"], points: 2 },
+    { group: 2, name: "小美", fields: ["title"], points: 1 },
 ]);
+
+// 第 3 首：同組同分取最先送出的；整組都沒拿分就顯示沒人答對
+await admin("open", { songId: 2 });
+await answer(hua, { year: 2007, artist: "", title: "日不落" });
+await answer(ming, { year: 2007, artist: "", title: "日不落" });
+await answer(mei, { year: 1990, artist: "", title: "" });
+await admin("close");
+assert.deepEqual((await playState(mei)).highlights.slice(0, 2), [
+    { group: 1, name: "小華", fields: ["year", "title"], points: 4 },
+    { group: 2, name: null, fields: [], points: 0 },
+]);
+
+// 人工改判後跑馬燈跟著更新
+await judge("2:小美", "title", 1, 2);
+assert.deepEqual((await playState(mei)).highlights[1], { group: 2, name: "小美", fields: ["title"], points: 1 });
 
 // 收卷後修正歌單會重新批改：第 2 首年份改成 2014，小美變精準 +3
 before = await scores();

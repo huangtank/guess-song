@@ -47,10 +47,10 @@ npx wrangler deploy
 
 | 路徑 | 說明 |
 |---|---|
-| `/` | 玩家用手機作答（名字＋組別＋組別密碼），收卷後有跑馬燈，可切換看計分板 |
+| `/` | 玩家用手機作答（名字＋組別代碼，代碼決定組別），收卷後有跑馬燈，可切換看計分板 |
 | `/scoreboard` | 投影用的大計分板，每秒更新 |
 | `/login` | 後台登入 |
-| `/dashboard` | 加分 / 改分、發題 / 收卷、作答狀況、組別密碼、歌單 |
+| `/dashboard` | 加分 / 改分、發題 / 收卷、作答狀況、組別代碼、歌單 |
 
 ## API
 
@@ -61,7 +61,7 @@ npx wrangler deploy
 | `/api/AddScore` | POST | json: `token`, `group`, `year`, `name`, `sing`, `dance` | 每個 `true` 加 1 分 |
 | `/api/SetScore` | POST | json: `token`, `group`, `score` | 直接指定分數 |
 
-| `/api/join` | POST | json: `name`, `group`, `password` | 玩家加入，回玩家 token |
+| `/api/join` | POST | json: `name`, `code` | 用組別代碼加入（不分大小寫），回 `group` 和玩家 token |
 | `/api/play/state` | POST | json: `token` | 目前題號、是否作答中、自己的答案（不含解答）、收卷後的跑馬燈內容 |
 | `/api/play/answer` | POST | json: `token`, `year`, `artist`, `title` | 作答中可重複送出，以最後一次為準 |
 | `/api/admin/{state,songs,open,close,judge,passwords}` | POST | json: `token`, ... | 後台作答管理，參數見 `src/index.js` 的 `handleAdmin` |
@@ -76,8 +76,8 @@ npx wrangler deploy
 計分：收卷時自動批改。年份精準 +3、差 3 年以內 +1；歌手、歌名答對各 +1。每組每項取組內最高分，
 所以一組一首歌最多 +5。收卷後在後台改判或修正歌單，總分會自動加減差額。
 
-跑馬燈：收卷後在玩家手機上顯示年份精準／歌手／歌名各自最先答對的人（看最後一次送出的時間），
-以及依收卷順序連續 2 首以上答對歌名的人。認證失敗回 401，參數錯回 400。
+跑馬燈：收卷後在玩家手機上每組顯示一則，例如「組1 玩家B [年份 + 歌名] 正確得 4 分」，
+取該組這首個人得分最高的人，同分取最先送出的（看最後一次送出的時間）；整組沒拿分就顯示沒有人答對。認證失敗回 401，參數錯回 400。
 
 登出是純前端行為（清掉 localStorage），沒有 `/api/logout`——token 是無狀態簽章，
 要強制撤銷就換 `AUTH_SECRET`。

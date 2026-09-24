@@ -1,24 +1,46 @@
 {
-    "name": "guess-song",
-    "account_id": "7659c0dae4e899b3bee76cdb5363057c",
-    "main": "src/index.js",
-    "compatibility_date": "2025-11-01",
-    "routes": [{ "pattern": "song.ntust.camp", "custom_domain": true }],
-    "assets": {
-        "directory": "./public",
-        // /api/* 一律交給 Worker，其餘走靜態檔（/login -> public/login.html）
-        "run_worker_first": ["/api/*"]
-    },
-    // ponytail: KV 只剩 DO 首次啟動時 seed 舊分數用，之後可拆
-    "kv_namespaces": [
-        {
-            "binding": "KV",
-            "id": "c54be703b1ce4a2983e576d6476d7fd4"
-        }
-    ],
-    "durable_objects": {
-        "bindings": [{ "name": "SCORES", "class_name": "Scores" }]
-    },
-    "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Scores"] }],
-    "observability": { "enabled": true }
+	"name": "guess-song",
+	"account_id": "c5f10e0edc5bc698f6ce61fc6760f6e2",
+	"main": "src/index.js",
+	"compatibility_date": "2025-11-01",
+	"routes": [
+		{
+			"pattern": "huangtank.qzz.io",
+			"custom_domain": true
+		}
+	],
+	"assets": {
+		"directory": "./public",
+		// /api/* 一律交給 Worker，其餘走靜態檔（/login -> public/login.html）
+		"run_worker_first": [
+			"/api/*"
+		]
+	},
+	// ponytail: KV 只剩 DO 首次啟動時 seed 舊分數用，之後可拆
+	"kv_namespaces": [
+		{
+			"binding": "KV",
+			"id": "43786530e4744b58b22b1fa1aa04e140",
+			"remote": true
+		}
+	],
+	"durable_objects": {
+		"bindings": [
+			{
+				"name": "SCORES",
+				"class_name": "Scores"
+			}
+		]
+	},
+	"migrations": [
+		{
+			"tag": "v1",
+			"new_sqlite_classes": [
+				"Scores"
+			]
+		}
+	],
+	"observability": {
+		"enabled": true
+	}
 }

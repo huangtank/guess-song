@@ -95,6 +95,9 @@ async function verifyPlayerToken(secret, token) {
 
 const isGroup = (v) => Number.isInteger(v) && v >= 1 && v <= GROUPS;
 
+// 組別代碼不分大小寫、忽略前後空白（手機常自動大寫第一個字）
+const codeKey = (v) => (typeof v === "string" ? v.trim().toLowerCase() : "");
+
 // 每項可能拿到的分數：年份精準 3、差 3 年以內 1；歌手、歌名答對 1
 const FIELD_POINTS = { year: [3, 1, 0], artist: [1, 0], title: [1, 0] };
 const FIELDS = Object.keys(FIELD_POINTS);
@@ -132,16 +135,17 @@ const groupPoints = (graded) =>
         }),
     );
 
-// 跑馬燈用：各項最先拿到滿分的人（時間看最後一次送出）
-function firstCorrect(graded) {
-    const who = (a) => (a ? { group: a.group, name: a.name } : null);
-    return Object.fromEntries(
-        FIELDS.map((f) => {
-            const full = graded.filter((a) => a.points[f] === FIELD_POINTS[f][0]);
-            return [f, who(full.sort((x, y) => x.at - y.at)[0])];
-        }),
-    );
-}
+// 跑馬燈用：每組個人得分最高的人，同分取最先送出的（看最後一次送出的時間）
+const groupBest = (graded) =>
+    Array.from({ length: GROUPS }, (_, i) => {
+        const best = graded
+            .filter((a) => a.group === i + 1)
+            .map((a) => ({ ...a, total: FIELDS.reduce((t, f) => t + a.points[f], 0) }))
+            .sort((x, y) => y.total - x.total || x.at - y.at)[0];
+        return best?.total > 0
+            ? { group: i + 1, name: best.name, fields: FIELDS.filter((f) => best.points[f] > 0), points: best.total }
+            : { group: i + 1, name: null, fields: [], points: 0 };
+    });
 
 const toList = (v) => (Array.isArray(v) ? v : [v]).filter((s) => typeof s === "string" && s.trim() !== "");
 
@@ -180,15 +184,18 @@ export class Scores extends DurableObject {
     // ===== 手機作答 =====
     // storage keys: songs（歌單+解答）、groupPw、round {songId, open}、
     // ans:<songId> {"<組>:<名字>": 答案}、awarded {songId: {組: 已加的分}}、
-    // history [依收卷順序的 songId]、highlights {songId: 跑馬燈內容}
+    // highlights {songId: 跑馬燈內容}
 
     async load(key, fallback) {
         return (await this.ctx.storage.get(key)) ?? fallback;
     }
 
-    async checkGroupPassword(group, password) {
-        const pw = (await this.load("groupPw", {}))[group];
-        return typeof pw === "string" && pw !== "" && pw === password;
+    // 用組別代碼找組別；空代碼 = 該組不開放
+    async groupForCode(code) {
+        const key = codeKey(code);
+        if (!key) return null;
+        const hit = Object.entries(await this.load("groupPw", {})).find(([, c]) => codeKey(c) === key);
+        return hit ? Number(hit[0]) : null;
     }
 
     async setGroupPasswords(passwords) {
@@ -237,8 +244,6 @@ export class Scores extends DurableObject {
         const round = await this.load("round", null);
         if (!round?.open) return false;
         await this.ctx.storage.put("round", { ...round, open: false });
-        const history = await this.load("history", []);
-        if (!history.includes(round.songId)) await this.ctx.storage.put("history", [...history, round.songId]);
         await this.settle(round.songId);
         return true;
     }
@@ -260,7 +265,8 @@ export class Scores extends DurableObject {
     async settle(songId) {
         const song = (await this.load("songs", []))[songId];
         if (!song) return;
-        const points = groupPoints(grade(song, await this.load(`ans:${songId}`, {})));
+        const graded = grade(song, await this.load(`ans:${songId}`, {}));
+        const points = groupPoints(graded);
         const awarded = await this.load("awarded", {});
         const prev = awarded[songId] ?? {};
         const scores = await this.read();
@@ -270,31 +276,8 @@ export class Scores extends DurableObject {
         }
         await this.ctx.storage.put("scores", scores);
         await this.ctx.storage.put("awarded", { ...awarded, [songId]: points });
-        await this.refreshHighlights();
-    }
-
-    // 依收卷順序重算每首的跑馬燈；改判前面的歌也會影響後面的連續答對，所以整段重算
-    async refreshHighlights() {
-        const songs = await this.load("songs", []);
-        const highlights = {};
-        let streak = {}; // player -> {group, name, count}：連續答對歌名到目前這首
-        for (const id of await this.load("history", [])) {
-            if (!songs[id]) continue;
-            const graded = grade(songs[id], await this.load(`ans:${id}`, {}));
-            const next = {};
-            for (const a of graded) {
-                if (a.points.title !== 1) continue;
-                next[a.player] = { group: a.group, name: a.name, count: (streak[a.player]?.count ?? 0) + 1 };
-            }
-            streak = next;
-            highlights[id] = {
-                first: firstCorrect(graded),
-                streaks: Object.values(streak)
-                    .filter((s) => s.count >= 2)
-                    .sort((x, y) => y.count - x.count),
-            };
-        }
-        await this.ctx.storage.put("highlights", highlights);
+        const highlights = await this.load("highlights", {});
+        await this.ctx.storage.put("highlights", { ...highlights, [songId]: groupBest(graded) });
     }
 
     async adminState(songId) {
@@ -350,11 +333,9 @@ async function handleSetScore(env, body) {
 async function handleJoin(env, body) {
     const name = typeof body.name === "string" ? body.name.trim() : "";
     if (!name || name.length > 20) return fail("名字要 1–20 個字");
-    if (!isGroup(body.group)) return fail("unaccept group value");
-    if (!(await scoresStub(env).checkGroupPassword(body.group, body.password))) {
-        return fail("組別密碼錯誤", 401);
-    }
-    return ok({ token: await issuePlayerToken(env.AUTH_SECRET, body.group, name) });
+    const group = await scoresStub(env).groupForCode(body.code);
+    if (!group) return fail("組別代碼錯誤", 401);
+    return ok({ group, token: await issuePlayerToken(env.AUTH_SECRET, group, name) });
 }
 
 async function handlePlay(env, action, body) {
@@ -410,7 +391,9 @@ async function handleAdmin(env, action, body) {
         const passwords = Object.fromEntries(
             Array.from({ length: GROUPS }, (_, i) => [String(i + 1), body.passwords?.[i + 1]]),
         );
-        if (!Object.values(passwords).every((v) => typeof v === "string")) return fail("密碼格式錯誤");
+        if (!Object.values(passwords).every((v) => typeof v === "string")) return fail("代碼格式錯誤");
+        const keys = Object.values(passwords).map(codeKey).filter(Boolean);
+        if (new Set(keys).size !== keys.length) return fail("各組的代碼不能重複");
         await stub.setGroupPasswords(passwords);
         return ok();
     }
