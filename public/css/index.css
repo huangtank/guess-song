@@ -139,7 +139,7 @@ html, body {
 /* 平板/電腦 (寬度大於 768px，改為三欄呈現) */
 @media (min-width: 768px) {
   .score-container {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 25px;
     padding-top: 40px;
   }

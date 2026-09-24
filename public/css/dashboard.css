@@ -230,6 +230,94 @@ html, body {
   box-shadow: inset -3px -3px 0 #611717, inset 3px 3px 0 #d14747;
 }
 
+/* ==========================================
+   作答管理（發題 / 密碼 / 作答狀況 / 歌單）
+   ========================================== */
+.input-row select,
+.password-grid input,
+.songs-json {
+  background-color: #000000;
+  border: 3px solid var(--mc-stone);
+  color: #ffffff;
+  font-size: 1rem;
+  outline: none;
+}
+
+.input-row select {
+  height: 42px;
+  padding: 0 10px;
+}
+
+.password-grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 10px;
+  align-items: center;
+  font-size: 0.9rem;
+}
+
+.password-grid input {
+  height: 38px;
+  padding: 0 8px;
+  min-width: 0;
+}
+
+.songs-json {
+  width: 100%;
+  padding: 8px;
+  font-family: monospace;
+  font-size: 0.85rem;
+  resize: vertical;
+}
+
+.input-row select:focus,
+.password-grid input:focus,
+.songs-json:focus {
+  border-color: var(--mc-gold);
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.answer-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.answer-table th,
+.answer-table td {
+  border: 2px solid var(--mc-stone);
+  padding: 6px;
+  text-align: left;
+  background-color: rgba(0, 0, 0, 0.3);
+  word-break: break-all;
+}
+
+.judge-btn {
+  width: 100%;
+  min-height: 34px;
+  background-color: #000000;
+  border: 2px solid var(--mc-stone);
+  color: #ffffff;
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.judge-btn.correct {
+  color: #9be86a;
+}
+
+.judge-btn.wrong {
+  color: #ff8a8a;
+}
+
+.judge-btn.overridden {
+  border-color: var(--mc-gold);
+}
+
 /* 登出卡片容器 */
 .logout-wrapper {
   margin-top: 10px;
@@ -241,7 +329,7 @@ html, body {
 /* 平板以上改成雙欄佈局控制框 */
 @media (min-width: 768px) {
   .score-container {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
   }
   
   .control-container {
@@ -250,7 +338,8 @@ html, body {
     align-items: start;
   }
   
-  .logout-wrapper {
+  .logout-wrapper,
+  .wide-card {
     grid-column: span 2;
   }
 }

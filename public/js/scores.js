@@ -1,9 +1,9 @@
-// 首頁與後台共用：抓分數、更新六隊 score box、每秒輪詢（defer 載入，DOM 已就緒）
+// 首頁與後台共用：抓分數、更新四隊 score box、每秒輪詢（defer 載入，DOM 已就緒）
 async function refreshScores() {
     try {
         const res = await fetch("/api/GetScore");
         const data = await res.json();
-        for (let i = 1; i <= 6; i++) {
+        for (let i = 1; i <= 4; i++) {
             document.querySelector(`#t${i} textarea`).value = data[i];
         }
     } catch {

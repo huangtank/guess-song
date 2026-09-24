@@ -2,3 +2,10 @@
 node_modules/
 .wrangler/
 .dev.vars
+
+# 歌單解答不能進 git，真正的歌單放 songs.json 再從後台上傳（只有範例檔可以提交）
+songs*.json
+!songs.example.json
+
+# Claude Code 專案說明只留在本機
+CLAUDE.md

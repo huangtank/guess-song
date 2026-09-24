@@ -8,6 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Noto+Sans+TC:wght@700&display=swap" rel="stylesheet">
     <script src="/js/scores.js" defer></script>
     <script src="/js/dashboard.js" defer></script>
+    <script src="/js/quiz.js" defer></script>
     <link rel="stylesheet" href="/css/dashboard.css">
 </head>
 <body>
@@ -16,7 +17,7 @@
         <a class="header-title" href="/">誰是猜歌王</a>
     </header>
 
-    <!-- 分數顯示區域 (6 隊網格) -->
+    <!-- 分數顯示區域 (4 隊網格) -->
     <main class="score-container">
         <div class="team-card" id="t1">
             <span class="team-label">第一隊</span>
@@ -34,14 +35,6 @@
             <span class="team-label">第四隊</span>
             <textarea class="score-box" maxlength="2" rows="1" placeholder="0" readonly></textarea>
         </div>
-        <div class="team-card" id="t5">
-            <span class="team-label">第五隊</span>
-            <textarea class="score-box" maxlength="2" rows="1" placeholder="0" readonly></textarea>
-        </div>
-        <div class="team-card" id="t6">
-            <span class="team-label">第六隊</span>
-            <textarea class="score-box" maxlength="2" rows="1" placeholder="0" readonly></textarea>
-        </div>
     </main>
 
     <!-- 控制面板容器 -->
@@ -52,8 +45,8 @@
             <h2 class="card-title">🎮 快速加分</h2>
             
             <div class="input-row">
-                <label for="group">組別 (1-6)</label>
-                <input id="group" type="number" min="1" max="6" placeholder="組別">
+                <label for="group">組別 (1-4)</label>
+                <input id="group" type="number" min="1" max="4" placeholder="組別">
             </div>
 
             <div class="checkbox-group">
@@ -91,8 +84,8 @@
             <p class="card-subtitle">打錯分數時使用</p>
 
             <div class="input-row">
-                <label for="group_set">組別 (1-6)</label>
-                <input id="group_set" type="number" min="1" max="6" placeholder="組別">
+                <label for="group_set">組別 (1-4)</label>
+                <input id="group_set" type="number" min="1" max="4" placeholder="組別">
             </div>
 
             <div class="input-row">
@@ -101,6 +94,56 @@
             </div>
 
             <button id="set_score_btn" class="mc-button btn-gold">重設分數</button>
+        </div>
+
+        <!-- 格子 3：發題 / 收卷 -->
+        <div class="control-card">
+            <h2 class="card-title">🎵 發題 / 收卷</h2>
+            <p id="quiz_status" class="card-subtitle">尚未發題</p>
+
+            <div class="input-row">
+                <label for="quiz_song">題目</label>
+                <select id="quiz_song"></select>
+            </div>
+
+            <button id="open_btn" class="mc-button btn-green">發題</button>
+            <button id="close_btn" class="mc-button btn-gold">收卷並計分</button>
+        </div>
+
+        <!-- 格子 4：組別密碼 -->
+        <div class="control-card">
+            <h2 class="card-title">🔑 組別密碼</h2>
+            <p class="card-subtitle">留空 = 該組不能加入</p>
+            <div id="group_passwords" class="password-grid"></div>
+            <button id="save_pw_btn" class="mc-button btn-gold">儲存密碼</button>
+        </div>
+
+        <!-- 格子 5：作答狀況 -->
+        <div class="control-card wide-card">
+            <h2 class="card-title">📋 作答狀況</h2>
+            <p id="answer_key" class="card-subtitle"></p>
+            <p id="answer_summary" class="card-subtitle"></p>
+            <p class="card-subtitle">點分數可以人工改判（年份 +3 → +1 → ✗ 輪流切換），切回原本的分數就是還原；收卷後改判會自動加減分</p>
+            <div class="table-wrap">
+                <table class="answer-table">
+                    <thead>
+                        <tr><th>組</th><th>名字</th><th>年份</th><th>歌手</th><th>歌名</th></tr>
+                    </thead>
+                    <tbody id="answer_rows"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 格子 6：歌單 -->
+        <div class="control-card wide-card">
+            <h2 class="card-title">📀 歌單與解答</h2>
+            <p class="card-subtitle">
+                JSON 陣列，格式見 songs.example.json；歌手、歌名可以填多種寫法。
+                解答只存在伺服器，比賽開始後請不要調換順序。
+            </p>
+            <input id="songs_file" type="file" accept=".json,application/json">
+            <textarea id="songs_json" class="songs-json" rows="10" spellcheck="false"></textarea>
+            <button id="save_songs_btn" class="mc-button btn-gold">儲存歌單</button>
         </div>
 
         <!-- 登出區塊 -->

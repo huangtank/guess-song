@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ntust camp 2026 - 作答</title>
+    <!-- 引入像素風格字型 -->
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Noto+Sans+TC:wght@700&display=swap" rel="stylesheet">
+    <script src="/js/play.js" defer></script>
+    <link rel="stylesheet" href="/css/login.css">
+    <link rel="stylesheet" href="/css/play.css">
+</head>
+<body>
+    <header class="top-header">
+        <a class="header-title" href="/">誰是猜歌王</a>
+    </header>
+
+    <!-- 收卷後的跑馬燈：最先答對、連續答對 -->
+    <div id="marquee" class="marquee" hidden><span id="marquee_text"></span></div>
+
+    <main class="login-container">
+        <!-- 加入：名字 + 組別 + 組別密碼 -->
+        <div id="join_view" class="login-card" hidden>
+            <h2 class="login-title">加入作答</h2>
+
+            <div class="input-group">
+                <label for="player_name">名字</label>
+                <input id="player_name" type="text" maxlength="20" autocomplete="off" placeholder="請輸入名字">
+            </div>
+
+            <div class="input-group">
+                <label for="player_group">組別</label>
+                <select id="player_group">
+                    <option value="1">第一隊</option>
+                    <option value="2">第二隊</option>
+                    <option value="3">第三隊</option>
+                    <option value="4">第四隊</option>
+                </select>
+            </div>
+
+            <div class="input-group">
+                <label for="group_password">組別密碼</label>
+                <input id="group_password" type="password" placeholder="請輸入組別密碼">
+            </div>
+
+            <button id="join_btn" class="mc-button">加入</button>
+        </div>
+
+        <!-- 作答 -->
+        <div id="play_view" class="login-card" hidden>
+            <p id="player_label" class="player-label"></p>
+            <h2 id="round_status" class="login-title">等待發題…</h2>
+
+            <div id="answer_form" class="answer-form" hidden>
+                <div class="input-group">
+                    <label for="ans_year">年份</label>
+                    <input id="ans_year" type="number" inputmode="numeric" placeholder="例如 2003">
+                </div>
+                <div class="input-group">
+                    <label for="ans_artist">歌手</label>
+                    <input id="ans_artist" type="text" maxlength="50" autocomplete="off" placeholder="歌手">
+                </div>
+                <div class="input-group">
+                    <label for="ans_title">歌名</label>
+                    <input id="ans_title" type="text" maxlength="50" autocomplete="off" placeholder="歌名">
+                </div>
+                <button id="answer_btn" class="mc-button">送出答案</button>
+            </div>
+
+            <p id="submitted" class="submitted"></p>
+            <button id="scores_btn" class="mc-button">看計分板</button>
+            <button id="leave_btn" class="leave-btn">換人作答</button>
+        </div>
+
+        <!-- 計分板 -->
+        <div id="score_view" class="login-card" hidden>
+            <h2 class="login-title">計分板</h2>
+            <div class="mini-scores">
+                <div class="mini-team"><span>第一隊</span><strong id="score_1">0</strong></div>
+                <div class="mini-team"><span>第二隊</span><strong id="score_2">0</strong></div>
+                <div class="mini-team"><span>第三隊</span><strong id="score_3">0</strong></div>
+                <div class="mini-team"><span>第四隊</span><strong id="score_4">0</strong></div>
+            </div>
+            <button id="back_btn" class="mc-button">回到作答</button>
+        </div>
+    </main>
+</body>
+</html>
