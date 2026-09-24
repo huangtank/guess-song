@@ -69,7 +69,8 @@ async function verifyToken(secret, token) {
 // 玩家 token 簽 "p." + payload，跟後台 token（只簽 exp）分開，兩種不能互用
 async function issuePlayerToken(secret, group, name) {
     const exp = Math.floor(Date.now() / 1000) + TOKEN_TTL;
-    const payload = b64u(enc.encode(JSON.stringify({ g: group, n: name, exp })));
+    // id 是每次加入時隨機產生的玩家識別；同組同名的人也會各自有一份答案
+    const payload = b64u(enc.encode(JSON.stringify({ g: group, n: name, id: crypto.randomUUID(), exp })));
     const sig = await crypto.subtle.sign("HMAC", await hmacKey(secret), enc.encode(`p.${payload}`));
     return `${payload}.${b64u(sig)}`;
 }
@@ -192,7 +193,7 @@ export class Scores extends DurableObject {
 
     // ===== 手機作答 =====
     // storage keys: songs（歌單+解答）、groupPw、round {songId, open}、
-    // ans:<songId> {"<組>:<名字>": 答案}、awarded {songId: {組: 已加的分}}、
+    // ans:<songId> {"<組>:<玩家 id>": 答案}、awarded {songId: {組: 已加的分}}、
     // highlights {songId: 跑馬燈內容}
 
     async load(key, fallback) {
@@ -212,10 +213,10 @@ export class Scores extends DurableObject {
     }
 
     // 只回題號和自己的答案，絕對不能帶到解答
-    async playerState(group, name) {
+    async playerState(group, id) {
         const round = await this.load("round", null);
         if (!round) return { round: null, answer: null };
-        const a = (await this.load(`ans:${round.songId}`, {}))[`${group}:${name}`];
+        const a = (await this.load(`ans:${round.songId}`, {}))[`${group}:${id}`];
         return {
             round: { no: round.songId + 1, open: round.open },
             answer: a ? { year: a.year, artist: a.artist, title: a.title } : null,
@@ -223,13 +224,13 @@ export class Scores extends DurableObject {
         };
     }
 
-    async submit(group, name, answer) {
+    async submit(group, id, name, answer) {
         const round = await this.load("round", null);
         if (!round?.open) return false;
         const key = `ans:${round.songId}`;
         const answers = await this.load(key, {});
         // 改答案就清掉人工改判，因為那是針對舊答案判的
-        answers[`${group}:${name}`] = { group, name, ...answer, at: Date.now(), override: {} };
+        answers[`${group}:${id}`] = { group, name, ...answer, at: Date.now(), override: {} };
         await this.ctx.storage.put(key, answers);
         return true;
     }
@@ -349,17 +350,18 @@ async function handleJoin(env, body) {
 
 async function handlePlay(env, action, body) {
     const player = await verifyPlayerToken(env.AUTH_SECRET, body.token);
-    if (!player) return fail("please join", 401);
+    // 舊版 token 沒有 id，請玩家重新加入
+    if (!player?.id) return fail("please join", 401);
     const stub = scoresStub(env);
 
-    if (action === "state") return ok(await stub.playerState(player.g, player.n));
+    if (action === "state") return ok(await stub.playerState(player.g, player.id));
 
     if (action === "answer") {
         const year = body.year ?? null;
         if (year !== null && !Number.isInteger(year)) return fail("年份要是整數");
         const text = (v) => (typeof v === "string" ? v.trim().slice(0, 50) : "");
         const answer = { year, artist: text(body.artist), title: text(body.title) };
-        return (await stub.submit(player.g, player.n, answer)) ? ok() : fail("現在不能作答");
+        return (await stub.submit(player.g, player.id, player.n, answer)) ? ok() : fail("現在不能作答");
     }
 
     return fail("not found", 404);

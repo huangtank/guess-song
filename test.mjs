@@ -107,7 +107,11 @@ const join = async (name, code) => post("/api/join", { name, code });
 const joinToken = async (...args) => (await (await join(...args)).json()).token;
 const answer = (t, a) => post("/api/play/answer", { token: t, ...a });
 const playState = async (t) => (await post("/api/play/state", { token: t })).json();
-const judge = (player, field, value, songId = 0) => admin("judge", { songId, player, field, value });
+// 作答 key 是「組別:隨機 id」，改判時用名字從後台資料找出 key
+const playerKey = async (name, songId) =>
+    (await (await admin("state", { songId })).json()).answers.find((a) => a.name === name).player;
+const judge = async (name, field, value, songId = 0) =>
+    admin("judge", { songId, player: await playerKey(name, songId), field, value });
 
 // 後台 API 都要驗 token
 assert.equal((await post("/api/admin/state", {})).status, 401);
@@ -185,24 +189,39 @@ assert.deepEqual(st.highlights, [
 ]);
 
 // 人工改判：年份可以改成 3 / 1 / 0，還原後總分跟著回來
-await judge("2:小美", "year", 3);
+await judge("小美", "year", 3);
 assert.equal((await scores())[2] - before[2], 5);
-await judge("2:小美", "year", null);
+await judge("小美", "year", null);
 assert.equal((await scores())[2] - before[2], 3);
-await judge("1:小明", "artist", 0);
+await judge("小明", "artist", 0);
 assert.equal((await scores())[1] - before[1], 4);
-await judge("1:小明", "artist", null);
+await judge("小明", "artist", null);
 assert.equal((await scores())[1] - before[1], 5);
 // 同組兩人都答對同一項只算一次
-await judge("1:小華", "artist", 1);
+await judge("小華", "artist", 1);
 assert.equal((await scores())[1] - before[1], 5);
-await judge("1:小華", "artist", null);
-assert.equal((await judge("1:小明", "sing", 1)).status, 400);
-assert.equal((await judge("1:小明", "year", 2)).status, 400);
-assert.equal((await judge("1:小明", "artist", 3)).status, 400);
+await judge("小華", "artist", null);
+assert.equal((await judge("小明", "sing", 1)).status, 400);
+assert.equal((await judge("小明", "year", 2)).status, 400);
+assert.equal((await judge("小明", "artist", 3)).status, 400);
 
 const { answers } = await (await admin("state", { songId: 0 })).json();
 assert.equal(answers.length, 3);
+assert.ok(answers.every((a) => !a.player.includes(a.name))); // key 不含名字
+
+// 同組同名的兩個人各自有自己的答案，不會互相覆蓋
+{
+    await admin("open", { songId: 0 });
+    const twinA = await joinToken("阿明", "Red");
+    const twinB = await joinToken("阿明", "Red");
+    await answer(twinA, { year: 2003, artist: "", title: "" });
+    await answer(twinB, { year: null, artist: "", title: "晴天" });
+    assert.equal((await playState(twinA)).answer.year, 2003);
+    assert.equal((await playState(twinB)).answer.title, "晴天");
+    const both = (await (await admin("state", { songId: 0 })).json()).answers.filter((a) => a.name === "阿明");
+    assert.equal(both.length, 2);
+    await admin("close");
+}
 
 // 第 2 首：小華這組沒拿分的人不會被選中
 await admin("open", { songId: 1 });
@@ -231,7 +250,7 @@ assert.deepEqual((await playState(mei)).highlights.slice(0, 2), [
 ]);
 
 // 人工改判後跑馬燈跟著更新
-await judge("2:小美", "title", 1, 2);
+await judge("小美", "title", 1, 2);
 assert.deepEqual((await playState(mei)).highlights[1], { group: 2, name: "小美", fields: ["title"], points: 1 });
 
 // 收卷後修正歌單會重新批改：第 2 首年份改成 2014，小美變精準 +3

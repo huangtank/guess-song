@@ -60,7 +60,6 @@ npx wrangler deploy
 | `/api/login` | POST | form: `username`, `password` | 回 `{status, msg, token}`，token 12 小時到期 |
 | `/api/AddScore` | POST | json: `token`, `group`, `year`, `name`, `sing`, `dance` | 每個 `true` 加 1 分 |
 | `/api/SetScore` | POST | json: `token`, `group`, `score` | 直接指定分數 |
-
 | `/api/join` | POST | json: `name`, `code` | 用組別代碼加入（不分大小寫），回 `group` 和玩家 token |
 | `/api/play/state` | POST | json: `token` | 目前題號、是否作答中、自己的答案（不含解答）、收卷後的跑馬燈內容 |
 | `/api/play/answer` | POST | json: `token`, `year`, `artist`, `title` | 作答中可重複送出，以最後一次為準 |
