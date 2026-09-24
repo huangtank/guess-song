@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ntust camp 2026 - 計分板</title>
+    <!-- 引入像素風格字型 (Minecraft 質感) -->
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Noto+Sans+TC:wght@700&display=swap" rel="stylesheet">
+    <script src="/js/scores.js" defer></script>
+    <link rel="stylesheet" href="/css/index.css">
+</head>
+<body>
+    <!-- 頂端置頂欄 (Header) -->
+    <header class="top-header">
+        <a class="header-title" href="/">誰是猜歌王</a>
+    </header>
+
+    <!-- 分數主區域 -->
+    <main class="score-container">
+        <div class="team-card" id="t1">
+            <span class="team-label">第一隊</span>
+            <textarea class="score-box" maxlength="2" rows="1" placeholder="0" readonly></textarea>
+        </div>
+        <div class="team-card" id="t2">
+            <span class="team-label">第二隊</span>
+            <textarea class="score-box" maxlength="2" rows="1" placeholder="0" readonly></textarea>
+        </div>
+        <div class="team-card" id="t3">
+            <span class="team-label">第三隊</span>
+            <textarea class="score-box" maxlength="2" rows="1" placeholder="0" readonly></textarea>
+        </div>
+        <div class="team-card" id="t4">
+            <span class="team-label">第四隊</span>
+            <textarea class="score-box" maxlength="2" rows="1" placeholder="0" readonly></textarea>
+        </div>
+    </main>
+</body>
+</html>

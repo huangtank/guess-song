@@ -1,4 +1,4 @@
-// 首頁與後台共用：抓分數、更新四隊 score box、每秒輪詢（defer 載入，DOM 已就緒）
+// 計分板（/scoreboard）與後台共用：抓分數、更新四隊 score box、每秒輪詢（defer 載入，DOM 已就緒）
 async function refreshScores() {
     try {
         const res = await fetch("/api/GetScore");
