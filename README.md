@@ -50,7 +50,7 @@ npx wrangler deploy
 | `/` | 玩家用手機作答（名字＋組別代碼，代碼決定組別），收卷後有跑馬燈，可切換看計分板 |
 | `/scoreboard` | 投影用的大計分板，每秒更新 |
 | `/login` | 後台登入 |
-| `/dashboard` | 加分 / 改分、發題 / 收卷、作答狀況、組別代碼、歌單 |
+| `/dashboard` | 加分 / 改分、發題 / 收卷、作答狀況、組別代碼、歌單、重置所有資料 |
 
 ## API
 
@@ -63,7 +63,7 @@ npx wrangler deploy
 | `/api/join` | POST | json: `name`, `code` | 用組別代碼加入（不分大小寫），回 `group` 和玩家 token |
 | `/api/play/state` | POST | json: `token` | 目前題號、是否作答中、自己的答案（不含解答）、收卷後的跑馬燈內容 |
 | `/api/play/answer` | POST | json: `token`, `year`, `artist`, `title` | 作答中可重複送出，以最後一次為準 |
-| `/api/admin/{state,songs,open,close,judge,passwords}` | POST | json: `token`, ... | 後台作答管理，參數見 `src/index.js` 的 `handleAdmin` |
+| `/api/admin/{state,songs,open,close,judge,passwords,reset}` | POST | json: `token`, ... | 後台作答管理，參數見 `src/index.js` 的 `handleAdmin` |
 
 `group` 是 1–4 的整數，`score` 是 0–999 的整數。
 

@@ -290,6 +290,12 @@ export class Scores extends DurableObject {
         await this.ctx.storage.put("highlights", { ...highlights, [songId]: groupBest(graded) });
     }
 
+    // 清空所有資料；分數直接寫成全 0，避免下次 read() 又從舊 KV 把分數搬回來
+    async resetAll() {
+        await this.ctx.storage.deleteAll();
+        await this.ctx.storage.put("scores", emptyScores());
+    }
+
     async adminState(songId) {
         const songs = await this.load("songs", []);
         const round = await this.load("round", null);
@@ -372,6 +378,11 @@ async function handleAdmin(env, action, body) {
     const stub = scoresStub(env);
 
     if (action === "state") return ok(await stub.adminState(body.songId));
+
+    if (action === "reset") {
+        await stub.resetAll();
+        return ok();
+    }
 
     if (action === "songs") {
         const songs = parseSongs(body.songs);

@@ -177,6 +177,17 @@ $("save_songs_btn").addEventListener("click", async () => {
     }
 });
 
+$("reset_btn").addEventListener("click", async () => {
+    const ok = confirm(
+        "確定要重置嗎？\n\n會清空：四組分數、歌單與解答、組別代碼、所有作答紀錄。\n這個動作無法復原。",
+    );
+    if (!ok || !(await adminApi("reset"))) return;
+    loaded = false; // 讓歌單、代碼欄位跟著清空
+    void refreshScores();
+    void refreshQuiz();
+    alert("已重置");
+});
+
 void refreshQuiz();
 setInterval(() => {
     if (!document.hidden) void refreshQuiz(true);

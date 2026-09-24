@@ -11,7 +11,13 @@ const mockKv = (map) => ({
 
 const mockCtx = () => {
     const store = new Map();
-    return { storage: { get: async (k) => store.get(k), put: async (k, v) => store.set(k, v) } };
+    return {
+        storage: {
+            get: async (k) => store.get(k),
+            put: async (k, v) => store.set(k, v),
+            deleteAll: async () => store.clear(),
+        },
+    };
 };
 
 const kv = new Map();
@@ -259,5 +265,26 @@ await admin("songs", { songs: songs.map((s, i) => (i === 1 ? { ...s, year: 2014 
 after = await scores();
 assert.equal(after[2] - before[2], 3);
 assert.equal(after[1] - before[1], 0); // 小明 2013 仍在 ±3 內
+
+// ===== 重置整個資料庫 =====
+assert.equal((await post("/api/admin/reset", {})).status, 401); // 要後台 token
+assert.equal((await admin("reset")).status, 200);
+assert.deepEqual(await scores(), { 1: 0, 2: 0, 3: 0, 4: 0 });
+{
+    const st = await (await admin("state")).json();
+    assert.deepEqual([st.songs, st.round, st.groupPw, st.answers], [[], null, {}, []]);
+}
+assert.equal((await join("小明", "Red")).status, 401); // 組別代碼也清掉了
+assert.equal((await playState(ming)).round, null); // 舊玩家看到的是尚未發題
+
+// 重置後不能又從舊 KV 把分數搬回來
+{
+    const seeded = new Scores(mockCtx(), {
+        KV: mockKv(new Map([["scores", JSON.stringify({ 1: 7, 2: 0, 3: 0, 4: 0 })]])),
+    });
+    assert.equal((await seeded.read())["1"], 7);
+    await seeded.resetAll();
+    assert.equal((await seeded.read())["1"], 0);
+}
 
 console.log("ok");
