@@ -163,5 +163,9 @@ setInterval(() => {
     void refreshScores();
 }, 3000);
 
+// 網址帶 ?code=1111 時預先填好組別代碼（可用 QR code 發給各組）
+const presetCode = new URLSearchParams(location.search).get("code");
+if (presetCode) $("group_code").value = presetCode;
+
 if (localStorage.getItem(PLAYER_KEY)) showPlay();
 else showJoin();
